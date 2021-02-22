@@ -55,6 +55,12 @@ var (
 			Default("").
 			Short('w').
 			String()
+	Token = kingpin.Flag("token", "Workplace API bot access token.").
+		Envar("TOKEN").
+		String()
+	Thread = kingpin.Flag("thread", "Workplace thread id prefixed by `t_` where the message is sent into.").
+		Envar("THREAD").
+		String()
 
 	// define prometheus counter
 	nodeTotals = prometheus.NewCounterVec(
@@ -78,6 +84,7 @@ var (
 	randomEstafette   = rand.New(rand.NewSource(time.Now().UnixNano()))
 	labelFilters      = map[string]string{}
 	whitelistInstance WhitelistInstance
+	notifier          Notifier
 )
 
 func init() {
@@ -117,6 +124,9 @@ func main() {
 	whitelistInstance.blacklist = *blacklist
 	whitelistInstance.whitelist = *whitelist
 	whitelistInstance.parseArguments()
+
+	notifier.token = *Token
+	notifier.thread = *Thread
 
 	kubernetes, err := NewKubernetesClient(os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT"),
 		os.Getenv("KUBERNETES_NAMESPACE"), *kubeConfigPath)

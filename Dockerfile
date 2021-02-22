@@ -1,9 +1,27 @@
-FROM scratch
+FROM golang:1.14-alpine AS builder
+WORKDIR /usr/src/app
 
-LABEL maintainer="estafette.io" \
-      description="The estafette-gke-preemptible-killer component is a Kubernetes controller that ensures preemptible nodes in a Container Engine cluster don't expire at the same time"
+ENV GO111MODULE=on
 
-COPY ca-certificates.crt /etc/ssl/certs/
-COPY estafette-gke-preemptible-killer /
+COPY . .
 
-CMD ["./estafette-gke-preemptible-killer"]
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /usr/src/app/bin/main /usr/src/app
+
+# Main Image
+FROM alpine:latest
+
+RUN apk update \
+  && apk --no-cache add \
+  ca-certificates openssl && update-ca-certificates
+
+# Setting timezone
+ENV TZ=Asia/Jakarta
+RUN apk add -U tzdata
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Setting folder workdir
+WORKDIR /usr/src/app
+
+COPY --from=builder /usr/src/app/bin/main .
+
+CMD ["./main"]

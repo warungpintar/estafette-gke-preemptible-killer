@@ -16,3 +16,9 @@
 # ignore build and helm artifacts
 /estafette-gke-preemptible-killer
 /estafette-gke-preemptible-killer-*.tgz
+
+# Dependencies
+vendor
+
+# IDE stuffs
+.idea
