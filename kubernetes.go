@@ -179,14 +179,18 @@ func (k *Kubernetes) DrainNode(name string, drainTimeout int) (err error) {
 		Str("host", name).
 		Msgf("%d pod(s) found", len(filteredPodList))
 
-	// Notify deleted pod
-	message := fmt.Sprintf("Deleting %d pod(s) from host %s\n\n", len(filteredPodList), name)
-	for i, pod := range filteredPodList {
-		message += fmt.Sprintf("#%d %s\n", i, *pod.Metadata.Name)
-	}
-	err = notifier.Notify(message)
-	if err != nil {
-		log.Info().Msgf("Error notify to workplace: %v", err)
+	if len(filteredPodList) > 1 {
+		// Notify deleted pod
+		message := fmt.Sprintf("Deleting *%d* pod(s) from cluster %s\n\n", len(filteredPodList), *filteredPodList[0].Metadata.ClusterName)
+		for i, pod := range filteredPodList {
+			message += fmt.Sprintf("#%d %s\n", i+1, *pod.Metadata.Name)
+		}
+		message += fmt.Sprintf("\n%s", time.Now().Format(time.RFC822Z))
+
+		err = notifier.Notify(message)
+		if err != nil {
+			log.Info().Msgf("Error notify to workplace: %v", err)
+		}
 	}
 
 	for _, pod := range filteredPodList {
